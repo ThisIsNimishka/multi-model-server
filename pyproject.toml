@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-model-server"
+version = "1.0.0"
+description = "A production-ready system for serving multiple LLM models simultaneously across multiple GPUs"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = [
+    "llm",
+    "ai",
+    "vllm",
+    "multi-gpu",
+    "model-serving",
+    "openai-api",
+    "qwen",
+    "mistral",
+    "machine-learning"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+vllm = [
+    "vllm>=0.6.0",
+    "transformers>=4.40.0",
+    "accelerate>=0.25.0",
+    "torch>=2.1.0",
+]
+qwen = [
+    "qwen-vl-utils>=0.0.8",
+    "tiktoken>=0.5.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "pre-commit>=3.0.0",
+]
+all = [
+    "multi-model-server[vllm,qwen,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/YOUR_USERNAME/multi-model-server"
+Documentation = "https://github.com/YOUR_USERNAME/multi-model-server#readme"
+Repository = "https://github.com/YOUR_USERNAME/multi-model-server.git"
+Issues = "https://github.com/YOUR_USERNAME/multi-model-server/issues"
+
+[project.scripts]
+multi-model-server = "server_manager:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["server_manager", "api_router"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.flake8]
+max-line-length = 100
+exclude = [".git", "__pycache__", "build", "dist", ".eggs", "*.egg"]
+ignore = ["E203", "W503"]
