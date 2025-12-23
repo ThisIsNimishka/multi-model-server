@@ -34,7 +34,7 @@ MODEL_CONFIGS = {
     },
     "qwen-vl": {
         "path": f"{MODELS_BASE}/models--Qwen--Qwen2.5-VL-7B-Instruct/snapshots/cc594898137f460bfe9f0759e9844b3ce807cfb5",
-        "type": "qwen-vl",
+        "type": "qwen2.5-vl",  # Changed from qwen-vl
     },
     "gemma": {
         "path": f"{MODELS_BASE}/cache/models--google--gemma-7b-it/snapshots/9c5798d27f588501ce1e108079d2a19e4c3a2353",
@@ -99,11 +99,13 @@ def load_model(model_name: str):
     
     config = MODEL_CONFIGS[model_name]
     model_path = config["path"]
+    model_type = config["type"]
     
     flash_available = check_flash_attention()
     
     logger.info("=" * 60)
     logger.info(f"Loading: {model_name}")
+    logger.info(f"Type: {model_type}")
     logger.info(f"Path: {model_path}")
     logger.info(f"Flash Attention: {'ENABLED' if flash_available else 'DISABLED'}")
     logger.info(f"GPUs: {torch.cuda.device_count()}")
@@ -123,17 +125,46 @@ def load_model(model_name: str):
     if flash_available:
         load_kwargs["attn_implementation"] = "flash_attention_2"
     
-    if config["type"] == "qwen-vl":
+    # Handle different model types
+    if model_type == "qwen2.5-vl":
+        # Qwen2.5-VL (Vision-Language) - newer version
         try:
-            from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
-            model = Qwen2VLForConditionalGeneration.from_pretrained(model_path, **load_kwargs)
+            from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+            
+            logger.info("Loading Qwen2.5-VL model...")
+            model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                model_path,
+                **load_kwargs
+            )
             processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
             tokenizer = processor.tokenizer
+            logger.info("Qwen2.5-VL loaded successfully!")
+            
+        except ImportError as e:
+            logger.error(f"Qwen2.5-VL not available in transformers: {e}")
+            logger.info("Please upgrade transformers: pip install -U transformers")
+            raise
         except Exception as e:
-            logger.error(f"Qwen-VL loading failed: {e}")
-            tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-            model = AutoModelForCausalLM.from_pretrained(model_path, **load_kwargs)
+            logger.error(f"Failed to load Qwen2.5-VL: {e}")
+            raise
+            
+    elif model_type == "qwen-vl":
+        # Older Qwen-VL
+        try:
+            from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+            
+            model = Qwen2VLForConditionalGeneration.from_pretrained(
+                model_path,
+                **load_kwargs
+            )
+            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            tokenizer = processor.tokenizer
+            
+        except Exception as e:
+            logger.error(f"Failed to load Qwen-VL: {e}")
+            raise
     else:
+        # Standard causal LM (Mistral, Gemma, etc.)
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(model_path, **load_kwargs)
     
@@ -195,12 +226,33 @@ def format_chat_prompt(messages: List[Message], model_name: str) -> str:
 
 
 def generate_response(messages: List[Message], temperature: float, max_tokens: int) -> tuple:
-    global model, tokenizer
+    global model, tokenizer, processor, ACTIVE_MODEL
     
-    prompt = format_chat_prompt(messages, ACTIVE_MODEL)
+    config = MODEL_CONFIGS.get(ACTIVE_MODEL, {})
+    model_type = config.get("type", "causal")
     
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096)
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    # For vision-language models, use processor
+    if model_type in ["qwen2.5-vl", "qwen-vl"] and processor is not None:
+        # Build conversation for Qwen VL
+        conversation = []
+        for msg in messages:
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+            conversation.append({"role": msg.role, "content": content})
+        
+        # Apply chat template
+        text = processor.apply_chat_template(
+            conversation,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        
+        inputs = processor(text=[text], return_tensors="pt", padding=True)
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    else:
+        # Standard text models
+        prompt = format_chat_prompt(messages, ACTIVE_MODEL)
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096)
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
     
     input_length = inputs["input_ids"].shape[1]
     
