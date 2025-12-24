@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen-VL Vision Test | Multi-Model AI Server</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 40px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00c6ff;
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .status-bar {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-bar .server-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .status-dot.online { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+        .status-dot.offline { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .status-dot.testing { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .status-text { font-weight: 600; }
+        .status-text.online { color: #22c55e; }
+        .status-text.offline { color: #ef4444; }
+
+        .test-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .test-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .test-section h2 .icon {
+            font-size: 24px;
+        }
+        .test-section h2 .badge {
+            background: rgba(0, 198, 255, 0.2);
+            color: #00c6ff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+        .input-group input[type="text"],
+        .input-group textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: rgba(0, 198, 255, 0.5);
+        }
+
+        .image-upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 16px;
+        }
+        .image-upload-area:hover {
+            border-color: rgba(0, 198, 255, 0.5);
+            background: rgba(0, 198, 255, 0.05);
+        }
+        .image-upload-area.has-image {
+            border-style: solid;
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        .image-upload-area .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .image-upload-area p {
+            color: rgba(255,255,255,0.5);
+        }
+        .image-upload-area img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+        }
+        #imageInput { display: none; }
+
+        .btn {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(0, 198, 255, 0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+        }
+        .btn.success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .result-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+        .result-box.visible { display: block; }
+        .result-box .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .result-box .result-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .result-box .result-status.success { color: #22c55e; }
+        .result-box .result-status.error { color: #ef4444; }
+        .result-box .result-time { color: rgba(255,255,255,0.5); font-size: 13px; }
+        .result-box .result-content {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .result-box .result-content.error {
+            color: #ef4444;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .summary-section {
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 30px;
+            display: none;
+        }
+        .summary-section.visible { display: block; }
+        .summary-section.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        .summary-section.partial {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .summary-section.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .summary-section h3 {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .summary-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+        .summary-item .label {
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .summary-item .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .summary-item .value.success { color: #22c55e; }
+        .summary-item .value.error { color: #ef4444; }
+
+        .sample-images {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .sample-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            object-fit: cover;
+        }
+        .sample-image:hover {
+            border-color: rgba(0, 198, 255, 0.5);
+            transform: scale(1.05);
+        }
+        .sample-image.selected {
+            border-color: #22c55e;
+        }
+
+        .or-divider {
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            margin: 16px 0;
+            position: relative;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+        .or-divider::before { left: 0; }
+        .or-divider::after { right: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👁️ Qwen-VL Vision Test</h1>
+        <p class="subtitle">Test both Text and Image Analysis capabilities</p>
+
+        <!-- Server Status -->
+        <div class="status-bar">
+            <div class="server-info">
+                <span class="status-dot" id="serverDot"></span>
+                <span>Qwen-VL (Port 8002)</span>
+            </div>
+            <span class="status-text" id="serverStatus">Checking...</span>
+        </div>
+
+        <!-- Test 1: Text Only -->
+        <div class="test-section">
+            <h2>
+                <span class="icon">💬</span>
+                Test 1: Text-Only Chat
+                <span class="badge">Basic</span>
+            </h2>
+            <div class="input-group">
+                <label>Enter a text prompt:</label>
+                <textarea id="textPrompt" placeholder="e.g., Explain what artificial intelligence is in 2 sentences.">Explain what artificial intelligence is in 2 sentences.</textarea>
+            </div>
+            <div class="test-buttons">
+                <button class="btn" id="textTestBtn" onclick="runTextTest()">
+                    🚀 Run Text Test
+                </button>
+            </div>
+            <div class="result-box" id="textResult">
+                <div class="result-header">
+                    <span class="result-status" id="textResultStatus"></span>
+                    <span class="result-time" id="textResultTime"></span>
+                </div>
+                <div class="result-content" id="textResultContent"></div>
+            </div>
+        </div>
+
+        <!-- Test 2: Image Analysis -->
+        <div class="test-section">
+            <h2>
+                <span class="icon">🖼️</span>
+                Test 2: Image Analysis
+                <span class="badge">Vision</span>
+            </h2>
+            
+            <div class="input-group">
+                <label>Upload an image or use a sample:</label>
+            </div>
+            
+            <div class="image-upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+                <div class="upload-icon">📷</div>
+                <p>Click to upload an image<br><small>or drag and drop</small></p>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+            
+            <div class="or-divider">OR use a sample image</div>
+            
+            <div class="sample-images" id="sampleImages">
+                <!-- Sample images will be generated -->
+            </div>
+
+            <div class="input-group" style="margin-top: 16px;">
+                <label>Question about the image:</label>
+                <textarea id="imagePrompt" placeholder="e.g., What do you see in this image? Describe it in detail.">What do you see in this image? Describe it in detail.</textarea>
+            </div>
+            
+            <div class="test-buttons">
+                <button class="btn" id="imageTestBtn" onclick="runImageTest()" disabled>
+                    🔍 Run Image Analysis
+                </button>
+                <button class="btn secondary" onclick="clearImage()">
+                    🗑️ Clear Image
+                </button>
+            </div>
+            
+            <div class="result-box" id="imageResult">
+                <div class="result-header">
+                    <span class="result-status" id="imageResultStatus"></span>
+                    <span class="result-time" id="imageResultTime"></span>
+                </div>
+                <div class="result-content" id="imageResultContent"></div>
+            </div>
+        </div>
+
+        <!-- Run All Tests -->
+        <div class="test-buttons" style="justify-content: center; margin-top: 30px;">
+            <button class="btn success" id="runAllBtn" onclick="runAllTests()" style="padding: 16px 32px; font-size: 16px;">
+                ✨ Run All Tests
+            </button>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-section" id="summary">
+            <h3 id="summaryTitle">📊 Test Results</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="label">Text Chat</div>
+                    <div class="value" id="summaryText">-</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">Image Analysis</div>
+                    <div class="value" id="summaryImage">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_PORT = 8002;
+        const MODEL_NAME = 'qwen-vl';
+        
+        let currentImage = null;
+        let testResults = { text: null, image: null };
+
+        // Sample test images (simple colored rectangles as base64)
+        const sampleImages = [
+            { name: 'Red Square', color: '#ef4444', desc: 'A red colored square' },
+            { name: 'Blue Circle', color: '#3b82f6', desc: 'A blue colored circle' },
+            { name: 'Green Triangle', color: '#22c55e', desc: 'A green colored triangle' }
+        ];
+
+        // Generate sample images
+        function generateSampleImages() {
+            const container = document.getElementById('sampleImages');
+            
+            sampleImages.forEach((sample, index) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                
+                // Background
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, 200, 200);
+                
+                // Shape
+                ctx.fillStyle = sample.color;
+                if (index === 0) {
+                    // Square
+                    ctx.fillRect(40, 40, 120, 120);
+                } else if (index === 1) {
+                    // Circle
+                    ctx.beginPath();
+                    ctx.arc(100, 100, 60, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Triangle
+                    ctx.beginPath();
+                    ctx.moveTo(100, 30);
+                    ctx.lineTo(170, 160);
+                    ctx.lineTo(30, 160);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                // Add text
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(sample.name, 100, 185);
+                
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.className = 'sample-image';
+                img.title = sample.name;
+                img.onclick = () => selectSampleImage(img, canvas.toDataURL('image/png'));
+                container.appendChild(img);
+            });
+        }
+
+        function selectSampleImage(imgElement, dataUrl) {
+            document.querySelectorAll('.sample-image').forEach(img => img.classList.remove('selected'));
+            imgElement.classList.add('selected');
+            
+            currentImage = dataUrl;
+            
+            const uploadArea = document.getElementById('uploadArea');
+            uploadArea.innerHTML = `<img src="${dataUrl}" alt="Selected image">`;
+            uploadArea.classList.add('has-image');
+            
+            document.getElementById('imageTestBtn').disabled = false;
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentImage = e.target.result;
+                    
+                    const uploadArea = document.getElementById('uploadArea');
+                    uploadArea.innerHTML = `<img src="${currentImage}" alt="Uploaded image">`;
+                    uploadArea.classList.add('has-image');
+                    
+                    document.querySelectorAll('.sample-image').forEach(img => img.classList.remove('selected'));
+                    document.getElementById('imageTestBtn').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearImage() {
+            currentImage = null;
+            const uploadArea = document.getElementById('uploadArea');
+            uploadArea.innerHTML = `
+                <div class="upload-icon">📷</div>
+                <p>Click to upload an image<br><small>or drag and drop</small></p>
+            `;
+            uploadArea.classList.remove('has-image');
+            document.querySelectorAll('.sample-image').forEach(img => img.classList.remove('selected'));
+            document.getElementById('imageTestBtn').disabled = true;
+            document.getElementById('imageInput').value = '';
+        }
+
+        // Check server status
+        async function checkServerStatus() {
+            const dot = document.getElementById('serverDot');
+            const status = document.getElementById('serverStatus');
+            
+            try {
+                const response = await fetch(`http://localhost:${SERVER_PORT}/health`, { mode: 'cors' });
+                if (response.ok) {
+                    dot.className = 'status-dot online';
+                    status.textContent = 'Online';
+                    status.className = 'status-text online';
+                    return true;
+                }
+            } catch (e) {}
+            
+            dot.className = 'status-dot offline';
+            status.textContent = 'Offline';
+            status.className = 'status-text offline';
+            return false;
+        }
+
+        // Run text test
+        async function runTextTest() {
+            const btn = document.getElementById('textTestBtn');
+            const resultBox = document.getElementById('textResult');
+            const resultStatus = document.getElementById('textResultStatus');
+            const resultTime = document.getElementById('textResultTime');
+            const resultContent = document.getElementById('textResultContent');
+            
+            const prompt = document.getElementById('textPrompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a text prompt');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+            resultBox.classList.add('visible');
+            resultStatus.innerHTML = '⏳ Processing...';
+            resultStatus.className = 'result-status';
+            resultContent.textContent = '';
+            resultTime.textContent = '';
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`http://localhost:${SERVER_PORT}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 256,
+                        temperature: 0.7
+                    })
+                });
+                
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const aiResponse = data.choices[0].message.content;
+                    
+                    resultStatus.innerHTML = '✅ Success';
+                    resultStatus.className = 'result-status success';
+                    resultTime.textContent = `${duration}s`;
+                    resultContent.textContent = aiResponse;
+                    resultContent.className = 'result-content';
+                    
+                    testResults.text = true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                resultStatus.innerHTML = '❌ Failed';
+                resultStatus.className = 'result-status error';
+                resultContent.textContent = `Error: ${e.message}`;
+                resultContent.className = 'result-content error';
+                testResults.text = false;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🚀 Run Text Test';
+            updateSummary();
+        }
+
+        // Run image test
+        async function runImageTest() {
+            const btn = document.getElementById('imageTestBtn');
+            const resultBox = document.getElementById('imageResult');
+            const resultStatus = document.getElementById('imageResultStatus');
+            const resultTime = document.getElementById('imageResultTime');
+            const resultContent = document.getElementById('imageResultContent');
+            
+            if (!currentImage) {
+                alert('Please upload or select an image first');
+                return;
+            }
+            
+            const prompt = document.getElementById('imagePrompt').value.trim() || 'What do you see in this image?';
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing...';
+            resultBox.classList.add('visible');
+            resultStatus.innerHTML = '⏳ Processing image...';
+            resultStatus.className = 'result-status';
+            resultContent.textContent = '';
+            resultTime.textContent = '';
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`http://localhost:${SERVER_PORT}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                { type: 'text', text: prompt },
+                                { type: 'image_url', image_url: { url: currentImage } }
+                            ]
+                        }],
+                        max_tokens: 512,
+                        temperature: 0.7
+                    })
+                });
+                
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const aiResponse = data.choices[0].message.content;
+                    
+                    resultStatus.innerHTML = '✅ Success';
+                    resultStatus.className = 'result-status success';
+                    resultTime.textContent = `${duration}s`;
+                    resultContent.textContent = aiResponse;
+                    resultContent.className = 'result-content';
+                    
+                    testResults.image = true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                resultStatus.innerHTML = '❌ Failed';
+                resultStatus.className = 'result-status error';
+                resultContent.textContent = `Error: ${e.message}`;
+                resultContent.className = 'result-content error';
+                testResults.image = false;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🔍 Run Image Analysis';
+            updateSummary();
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            const btn = document.getElementById('runAllBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running all tests...';
+            
+            // Select first sample image if no image selected
+            if (!currentImage) {
+                const firstSample = document.querySelector('.sample-image');
+                if (firstSample) firstSample.click();
+            }
+            
+            // Run text test
+            await runTextTest();
+            
+            // Wait a bit
+            await new Promise(r => setTimeout(r, 500));
+            
+            // Run image test
+            await runImageTest();
+            
+            btn.disabled = false;
+            btn.textContent = '✨ Run All Tests';
+        }
+
+        // Update summary
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            const summaryTitle = document.getElementById('summaryTitle');
+            const summaryText = document.getElementById('summaryText');
+            const summaryImage = document.getElementById('summaryImage');
+            
+            summary.classList.add('visible');
+            
+            // Text result
+            if (testResults.text === true) {
+                summaryText.textContent = '✅ Pass';
+                summaryText.className = 'value success';
+            } else if (testResults.text === false) {
+                summaryText.textContent = '❌ Fail';
+                summaryText.className = 'value error';
+            } else {
+                summaryText.textContent = '-';
+                summaryText.className = 'value';
+            }
+            
+            // Image result
+            if (testResults.image === true) {
+                summaryImage.textContent = '✅ Pass';
+                summaryImage.className = 'value success';
+            } else if (testResults.image === false) {
+                summaryImage.textContent = '❌ Fail';
+                summaryImage.className = 'value error';
+            } else {
+                summaryImage.textContent = '-';
+                summaryImage.className = 'value';
+            }
+            
+            // Summary class
+            summary.classList.remove('success', 'partial', 'error');
+            if (testResults.text === true && testResults.image === true) {
+                summary.classList.add('success');
+                summaryTitle.textContent = '🎉 All Tests Passed!';
+            } else if (testResults.text === true || testResults.image === true) {
+                summary.classList.add('partial');
+                summaryTitle.textContent = '⚠️ Partial Success';
+            } else if (testResults.text === false || testResults.image === false) {
+                summary.classList.add('error');
+                summaryTitle.textContent = '❌ Tests Failed';
+            }
+        }
+
+        // Initialize
+        checkServerStatus();
+        generateSampleImages();
+        setInterval(checkServerStatus, 10000);
+    </script>
+</body>
+</html>
