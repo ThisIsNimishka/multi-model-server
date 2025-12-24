@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Test | Multi-Model AI Server</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 40px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00c6ff;
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 40px;
+        }
+        .test-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .test-card h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .status-dot.online { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+        .status-dot.offline { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .status-dot.testing { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .test-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .test-row:last-child { border-bottom: none; }
+        .test-label { color: rgba(255,255,255,0.6); }
+        .test-value { font-weight: 600; }
+        .test-value.success { color: #22c55e; }
+        .test-value.error { color: #ef4444; }
+        .test-value.pending { color: #f59e0b; }
+        .response-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0, 198, 255, 0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .instructions {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .instructions h3 { color: #ef4444; margin-bottom: 15px; }
+        .instructions code {
+            display: block;
+            background: rgba(0,0,0,0.4);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #00c6ff;
+        }
+        .summary {
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .summary.success { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); }
+        .summary.error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+        .summary h3 { margin-bottom: 10px; }
+        .log-area {
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 30px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .log-entry.info { color: #00c6ff; }
+        .log-entry.success { color: #22c55e; }
+        .log-entry.error { color: #ef4444; }
+        .log-entry .time { color: rgba(255,255,255,0.3); margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Connection Test</h1>
+        <p class="subtitle">Multi-Model AI Server - Backend Verification</p>
+
+        <!-- Mistral Test Card -->
+        <div class="test-card" id="mistral-card">
+            <h2>
+                <span class="status-dot" id="mistral-dot"></span>
+                Mistral-7B (Port 8001)
+            </h2>
+            <div class="test-row">
+                <span class="test-label">Health Check</span>
+                <span class="test-value" id="mistral-health">Not tested</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label">Chat Completion</span>
+                <span class="test-value" id="mistral-chat">Not tested</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label">Response Time</span>
+                <span class="test-value" id="mistral-time">-</span>
+            </div>
+            <div class="response-box" id="mistral-response" style="display: none;"></div>
+        </div>
+
+        <!-- Qwen-VL Test Card -->
+        <div class="test-card" id="qwen-card">
+            <h2>
+                <span class="status-dot" id="qwen-dot"></span>
+                Qwen-VL (Port 8002)
+            </h2>
+            <div class="test-row">
+                <span class="test-label">Health Check</span>
+                <span class="test-value" id="qwen-health">Not tested</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label">Chat Completion</span>
+                <span class="test-value" id="qwen-chat">Not tested</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label">Response Time</span>
+                <span class="test-value" id="qwen-time">-</span>
+            </div>
+            <div class="response-box" id="qwen-response" style="display: none;"></div>
+        </div>
+
+        <button class="btn" id="testBtn" onclick="runAllTests()">
+            🚀 Run All Tests
+        </button>
+
+        <div class="log-area" id="logArea">
+            <div class="log-entry info"><span class="time">[--:--:--]</span> Ready to test. Click "Run All Tests" to begin.</div>
+        </div>
+
+        <div class="instructions" id="instructions" style="display: none;">
+            <h3>⚠️ Servers Not Running</h3>
+            <p>Start your servers with these commands:</p>
+            <code>
+# Terminal 1 - Mistral<br>
+D:\vllm_env\Scripts\activate<br>
+set CUDA_VISIBLE_DEVICES=0,1,2,3<br>
+python server_v2.py --model mistral --port 8001
+            </code>
+            <code>
+# Terminal 2 - Qwen-VL<br>
+D:\vllm_env\Scripts\activate<br>
+set CUDA_VISIBLE_DEVICES=4,5,6,7<br>
+python server_v2.py --model qwen-vl --port 8002
+            </code>
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h3 id="summaryTitle">Test Results</h3>
+            <p id="summaryText"></p>
+        </div>
+    </div>
+
+    <script>
+        const servers = [
+            { id: 'mistral', name: 'Mistral-7B', port: 8001, model: 'mistral' },
+            { id: 'qwen', name: 'Qwen-VL', port: 8002, model: 'qwen-vl' }
+        ];
+
+        let results = { mistral: { health: false, chat: false }, qwen: { health: false, chat: false } };
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="time">[${time}]</span> ${message}`;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        async function testHealth(server) {
+            const dot = document.getElementById(`${server.id}-dot`);
+            const health = document.getElementById(`${server.id}-health`);
+            
+            dot.className = 'status-dot testing';
+            health.textContent = 'Testing...';
+            health.className = 'test-value pending';
+            
+            log(`Testing ${server.name} health endpoint...`);
+            
+            try {
+                const response = await fetch(`http://localhost:${server.port}/health`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    health.textContent = '✓ Online';
+                    health.className = 'test-value success';
+                    log(`${server.name} health check passed!`, 'success');
+                    results[server.id].health = true;
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                dot.className = 'status-dot offline';
+                health.textContent = '✗ Offline';
+                health.className = 'test-value error';
+                log(`${server.name} health check failed: ${e.message}`, 'error');
+                results[server.id].health = false;
+                return false;
+            }
+        }
+
+        async function testChat(server) {
+            const dot = document.getElementById(`${server.id}-dot`);
+            const chat = document.getElementById(`${server.id}-chat`);
+            const time = document.getElementById(`${server.id}-time`);
+            const responseBox = document.getElementById(`${server.id}-response`);
+            
+            chat.textContent = 'Testing...';
+            chat.className = 'test-value pending';
+            
+            log(`Testing ${server.name} chat completion...`);
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`http://localhost:${server.port}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: server.model,
+                        messages: [{ role: 'user', content: 'Say hello in exactly 5 words.' }],
+                        max_tokens: 50,
+                        temperature: 0.7
+                    })
+                });
+                
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const aiResponse = data.choices[0].message.content;
+                    
+                    dot.className = 'status-dot online';
+                    chat.textContent = '✓ Working';
+                    chat.className = 'test-value success';
+                    time.textContent = `${duration}s`;
+                    time.className = 'test-value success';
+                    
+                    responseBox.textContent = `AI: "${aiResponse}"`;
+                    responseBox.style.display = 'block';
+                    
+                    log(`${server.name} responded in ${duration}s: "${aiResponse}"`, 'success');
+                    results[server.id].chat = true;
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                dot.className = 'status-dot offline';
+                chat.textContent = '✗ Failed';
+                chat.className = 'test-value error';
+                time.textContent = '-';
+                log(`${server.name} chat test failed: ${e.message}`, 'error');
+                results[server.id].chat = false;
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+            
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('summary').style.display = 'none';
+            
+            log('Starting all tests...', 'info');
+            
+            let allPassed = true;
+            let anyFailed = false;
+            
+            for (const server of servers) {
+                const healthOk = await testHealth(server);
+                
+                if (healthOk) {
+                    const chatOk = await testChat(server);
+                    if (!chatOk) anyFailed = true;
+                } else {
+                    document.getElementById(`${server.id}-chat`).textContent = 'Skipped';
+                    document.getElementById(`${server.id}-chat`).className = 'test-value';
+                    anyFailed = true;
+                }
+                
+                // Small delay between servers
+                await new Promise(r => setTimeout(r, 500));
+            }
+            
+            // Show summary
+            const summary = document.getElementById('summary');
+            const summaryTitle = document.getElementById('summaryTitle');
+            const summaryText = document.getElementById('summaryText');
+            
+            const passedCount = Object.values(results).filter(r => r.health && r.chat).length;
+            
+            if (passedCount === servers.length) {
+                summary.className = 'summary success';
+                summaryTitle.textContent = '✅ All Tests Passed!';
+                summaryText.textContent = 'Your frontend and backend are properly connected. You can now use the chat interface!';
+            } else if (passedCount > 0) {
+                summary.className = 'summary';
+                summaryTitle.textContent = '⚠️ Partial Success';
+                summaryText.textContent = `${passedCount}/${servers.length} servers are working. Check the failed servers above.`;
+                document.getElementById('instructions').style.display = 'block';
+            } else {
+                summary.className = 'summary error';
+                summaryTitle.textContent = '❌ All Tests Failed';
+                summaryText.textContent = 'No servers are responding. Make sure to start your backend servers.';
+                document.getElementById('instructions').style.display = 'block';
+            }
+            
+            summary.style.display = 'block';
+            
+            log('All tests completed!', 'info');
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 Run Tests Again';
+        }
+    </script>
+</body>
+</html>
