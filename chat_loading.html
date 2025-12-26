@@ -288,7 +288,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 4px;
+            margin-bottom: 0;
             opacity: 0;
             animation: fadeUp 1s ease-out forwards;
             animation-delay: 0.1s;
@@ -314,7 +314,15 @@
         /* Header */
         header {
             text-align: center;
-            padding: 2px 0 30px 0;
+            padding: 30px 30px 30px 30px;
+            margin-top: -60px;
+            background: rgba(20, 30, 50, 0.75);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            isolation: isolate;
+            z-index: 5;
             opacity: 0;
             animation: fadeUp 1s ease-out forwards;
             animation-delay: 0.2s;
