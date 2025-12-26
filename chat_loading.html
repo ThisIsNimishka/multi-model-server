@@ -273,12 +273,14 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px 10%;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             position: relative;
             z-index: 2;
+            transform: scale(0.95);
+            transform-origin: top center;
         }
 
         /* Intel Logo - 200px */
@@ -714,7 +716,7 @@
         .footer .credits .co-authors { color: rgba(255,255,255,0.45); }
 
         @media (max-width: 768px) {
-            .container { padding: 15px; }
+            .container { padding: 15px 10%; }
             .models-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .message { max-width: 95%; }
             header h1 { font-size: 2rem; }
