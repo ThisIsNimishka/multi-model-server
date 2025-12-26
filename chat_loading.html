@@ -22,13 +22,44 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: radial-gradient(ellipse at center, #0a0a1a 0%, #000 100%);
+            background: radial-gradient(ellipse at 30% 20%, rgba(20, 40, 80, 0.4) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(0, 100, 150, 0.3) 0%, transparent 50%),
+                        radial-gradient(ellipse at center, #050a15 0%, #000 100%);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             transition: opacity 0.6s ease-out;
+            overflow: hidden;
+        }
+
+        /* Loading screen background elements */
+        .loading-screen::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 198, 255, 0.08) 0%, transparent 70%);
+            top: -200px;
+            left: -200px;
+            animation: loadingOrb 8s ease-in-out infinite;
+        }
+
+        .loading-screen::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(100, 80, 200, 0.06) 0%, transparent 70%);
+            bottom: -150px;
+            right: -150px;
+            animation: loadingOrb 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes loadingOrb {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
         }
 
         .loading-screen.fade-out {
@@ -42,9 +73,11 @@
 
         /* Loading Logo */
         .loading-logo {
-            margin-bottom: 80px;
+            margin-bottom: 60px;
             opacity: 0;
             animation: loadingLogoIn 0.8s ease-out forwards;
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes loadingLogoIn {
@@ -53,16 +86,30 @@
         }
 
         .loading-logo img {
-            height: 450px;
-            filter: drop-shadow(0 0 60px rgba(0, 180, 255, 0.5));
+            height: 400px;
+            filter: drop-shadow(0 0 80px rgba(0, 180, 255, 0.5));
+            animation: logoBreath 3s ease-in-out infinite;
+        }
+
+        @keyframes logoBreath {
+            0%, 100% { filter: drop-shadow(0 0 60px rgba(0, 180, 255, 0.4)); }
+            50% { filter: drop-shadow(0 0 100px rgba(0, 180, 255, 0.6)); }
         }
 
         /* Progress Bar Container */
         .progress-container {
             width: 380px;
+            padding: 30px 40px;
+            background: rgba(20, 30, 50, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             opacity: 0;
             animation: progressIn 0.5s ease-out forwards;
             animation-delay: 0.3s;
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes progressIn {
@@ -72,11 +119,12 @@
 
         .progress-bar {
             width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 10px;
             overflow: hidden;
             position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .progress-fill {
@@ -86,7 +134,7 @@
             background-size: 200% 100%;
             border-radius: 10px;
             animation: progressFill 2.5s ease-out forwards, progressShine 1s linear infinite;
-            box-shadow: 0 0 15px rgba(0, 198, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.6), 0 0 40px rgba(0, 198, 255, 0.3);
         }
 
         @keyframes progressFill {
@@ -104,10 +152,10 @@
 
         /* Loading Text */
         .loading-text {
-            margin-top: 20px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 3px;
+            margin-top: 24px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 4px;
             text-transform: uppercase;
             opacity: 0;
             animation: progressIn 0.5s ease-out forwards;
@@ -116,13 +164,14 @@
 
         /* Loading Percentage */
         .loading-percent {
-            margin-top: 10px;
-            font-size: 14px;
+            margin-top: 8px;
+            font-size: 18px;
             color: #00c6ff;
             font-weight: 600;
             opacity: 0;
             animation: progressIn 0.5s ease-out forwards;
             animation-delay: 0.5s;
+            text-shadow: 0 0 20px rgba(0, 198, 255, 0.5);
         }
 
         /* ========== MAIN CONTENT ========== */
@@ -637,8 +686,8 @@
             .model-card p { font-size: 10px; }
             .intel-logo-img { height: 200px; }
             .stats { flex-wrap: wrap; gap: 15px; font-size: 11px; }
-            .loading-logo img { height: 280px; }
-            .progress-container { width: 300px; }
+            .loading-logo img { height: 250px; }
+            .progress-container { width: 280px; padding: 24px 30px; }
         }
     </style>
 </head>
