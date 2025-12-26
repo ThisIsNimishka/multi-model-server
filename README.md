@@ -3,162 +3,126 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CUDA 12.x](https://img.shields.io/badge/CUDA-12.x-green.svg)](https://developer.nvidia.com/cuda-toolkit)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal.svg)](https://fastapi.tiangolo.com/)
 
-A production-ready system for serving multiple LLM models simultaneously across multiple GPUs with a beautiful web interface.
-
-🌐 **Live Demo:** [thisisnimishka.github.io/multi-model-server](https://thisisnimishka.github.io/multi-model-server/)
+Serve multiple LLM models simultaneously across multiple GPUs with an OpenAI-compatible API.
 
 ---
 
 ## ✨ Features
 
-- **Multi-Model Support** — Run multiple models simultaneously on different GPUs
-- **OpenAI-Compatible API** — Drop-in replacement for OpenAI API
-- **Vision Support** — Qwen-VL for image understanding
-- **Beautiful Web UI** — Modern glass-morphism chat interface
-- **Easy Model Addition** — Template-based system for adding new models
-- **Health Monitoring** — Built-in health checks per model
+- **Multi-Model** — Run different models on different GPUs
+- **OpenAI-Compatible** — Drop-in replacement API
+- **Vision Support** — Image understanding with VL models
+- **SDPA Optimized** — Fast inference with PyTorch's scaled dot-product attention
+- **Template System** — Add new models in minutes
+- **Modern Web UI** — Glass-morphism chat interface
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| **API** | FastAPI + Uvicorn |
+| **Models** | HuggingFace Transformers |
+| **Backend** | PyTorch + CUDA |
+| **Optimization** | SDPA / Flash Attention 2 |
+
+---
+
+## 📁 Structure
 
 ```
 multi-model-server/
-│
-├── frontend/                 # Web UI (GitHub Pages)
-│   ├── index.html            # Live chat interface
-│   ├── chat_loading.html     # Working version
-│   └── chat_server_down.html # Offline page
-│
-├── servers/                  # Model servers
-│   ├── _template.py          # ⭐ Copy this for new models
-│   ├── mistral.py            # Mistral-7B server
-│   ├── qwen.py               # Qwen-VL server
-│   ├── router.py             # API router
-│   └── manager.py            # Server manager
-│
-├── scripts/                  # Startup scripts
-│   ├── start.bat             # Start all servers
-│   ├── stop.bat              # Stop all servers
-│   └── install.bat           # Install dependencies
-│
-├── tests/                    # Test files
-│   └── test_client.py
-│
-├── README.md
-├── requirements.txt
-└── LICENSE
+├── frontend/           # Web interface
+├── servers/            # Model servers
+│   ├── _template.py    # ⭐ Copy for new models
+│   ├── mistral.py      # Mistral-7B
+│   ├── qwen.py         # Qwen-VL (vision)
+│   └── router.py       # API router
+├── scripts/            # Batch scripts
+└── tests/
 ```
-
----
-
-## 💻 Hardware Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| GPU | 1x 10GB+ VRAM | Multi-GPU setup |
-| RAM | 16GB | 32GB+ |
-| Storage | 50GB SSD | 500GB+ SSD |
-| CUDA | 12.0+ | 12.4+ |
-
-### Current Setup (Example)
-- 1x RTX 4080 (16GB) — Qwen-VL
-- 7x RTX 3080 (10GB) — Mistral, Gemma, Llama, etc.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Clone Repository
+### 1. Clone & Install
 
 ```bash
-git clone https://github.com/ThisIsNimishka/multi-model-server.git
+git clone https://github.com/YOUR_USERNAME/multi-model-server.git
 cd multi-model-server
-```
-
-### 2. Install Dependencies
-
-```bash
-# Windows
-scripts\install.bat
-
-# Manual
 pip install -r requirements.txt
 ```
 
-### 3. Download Models
+### 2. Download a Model
 
 ```bash
-# Using huggingface-cli
 pip install huggingface_hub
 huggingface-cli download mistralai/Mistral-7B-Instruct-v0.2
-huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct
 ```
 
-### 4. Configure & Run
+### 3. Configure
 
-Edit the CONFIG section in `servers/mistral.py`:
+Edit `servers/mistral.py` CONFIG section:
 
 ```python
-MODEL_PATH = "D:/AI_MODELS/models--mistralai--Mistral-7B-Instruct-v0.2/snapshots/..."
-PORT = 8001
-GPU_IDS = "0,1"
+MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"
+MODEL_NAME = "mistral"
+HF_CACHE_DIR = None          # Your cache dir or None for default
+DEFAULT_PORT = 8001
+LOCAL_FILES_ONLY = False     # True if already downloaded
 ```
 
-Run the server:
+### 4. Run
 
 ```bash
-python servers/mistral.py
+# Single GPU
+python servers/mistral.py --port 8001
+
+# Specific GPUs
+set CUDA_VISIBLE_DEVICES=0,1
+python servers/mistral.py --port 8001
 ```
 
 ---
 
-## 🆕 Adding a New Model
-
-### Step 1: Copy Template
+## 🆕 Adding a Model
 
 ```bash
-copy servers\_template.py servers\llama.py
+# 1. Copy template
+cp servers/_template.py servers/llama.py
+
+# 2. Edit CONFIG section at top:
+MODEL_ID = "meta-llama/Llama-3-8B-Instruct"
+MODEL_NAME = "llama"
+DEFAULT_PORT = 8003
+
+# 3. Run
+python servers/llama.py --port 8003
 ```
-
-### Step 2: Edit CONFIG Section
-
-Open `servers/llama.py` and edit only the top section:
-
-```python
-# === CONFIG ===
-MODEL_NAME = "llama-3-8b"
-MODEL_PATH = "D:/AI_MODELS/models--meta-llama--Llama-3-8B/snapshots/..."
-PORT = 8003
-GPU_IDS = "4,5"
-MAX_MODEL_LEN = 4096
-GPU_MEMORY_UTILIZATION = 0.85
-TENSOR_PARALLEL_SIZE = 2
-```
-
-### Step 3: Run
-
-```bash
-python servers/llama.py
-```
-
-**That's it!** Your new model is now serving on the specified port.
 
 ---
 
-## 📡 API Usage
+## 📡 API
 
-### OpenAI-Compatible Endpoint
+### Chat Completion
+
+```bash
+curl http://localhost:8001/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"mistral","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+### Python
 
 ```python
 import openai
 
-client = openai.OpenAI(
-    base_url="http://localhost:8001/v1",
-    api_key="not-needed"
-)
-
+client = openai.OpenAI(base_url="http://localhost:8001/v1", api_key="x")
 response = client.chat.completions.create(
     model="mistral",
     messages=[{"role": "user", "content": "Hello!"}]
@@ -166,26 +130,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### cURL
-
-```bash
-curl http://localhost:8001/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "mistral",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-```
-
-### Health Check
-
-```bash
-curl http://localhost:8001/health
-```
-
----
-
-## 🔌 Available Endpoints
+### Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -195,103 +140,45 @@ curl http://localhost:8001/health
 
 ---
 
-## 🖥️ Model Servers
+## ⚙️ Config Options
 
-| Model | Port | GPUs | Description |
-|-------|------|------|-------------|
-| Mistral-7B | 8001 | 2,3 | Fast text generation |
-| Qwen-VL | 8002 | 0,1 | Vision + Language |
-| *Add more...* | 800X | X,X | Use `_template.py` |
-
----
-
-## 🌐 Web Interface
-
-The frontend is hosted on GitHub Pages:
-
-**Live:** [thisisnimishka.github.io/multi-model-server](https://thisisnimishka.github.io/multi-model-server/)
-
-### Features
-- Modern glass-morphism design
-- Model selection cards
-- Real-time chat with streaming
-- Image upload for vision models
-- Token/speed statistics
-
-### Switching Pages
-
-| File | Purpose |
-|------|---------|
-| `chat_loading.html` | Normal working interface |
-| `chat_server_down.html` | Offline/maintenance page |
-
-To switch: Copy content to `index.html` and push.
+| Option | Description |
+|--------|-------------|
+| `MODEL_ID` | HuggingFace model ID |
+| `MODEL_NAME` | Display name for API |
+| `HF_CACHE_DIR` | Cache directory (None = default) |
+| `DEFAULT_PORT` | Server port |
+| `LOCAL_FILES_ONLY` | Skip download, use cached |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### CUDA Out of Memory
-
-```python
-# Reduce in CONFIG section:
-GPU_MEMORY_UTILIZATION = 0.80
-MAX_MODEL_LEN = 2048
+**OOM Error**
+```bash
+# Use fewer/smaller GPUs
+set CUDA_VISIBLE_DEVICES=0
 ```
 
-### Port Already in Use
-
+**Port in use**
 ```bash
-# Windows - find process
+# Windows
 netstat -ano | findstr :8001
-
-# Kill process
 taskkill /PID <pid> /F
 ```
 
-### Model Loading Fails
-
+**Model not found**
 ```bash
-# Verify model path exists
-dir D:\AI_MODELS\models--mistralai--Mistral-7B-Instruct-v0.2\snapshots\
+# Download first
+huggingface-cli download <model-id>
 ```
-
----
-
-## 📋 Scripts
-
-| Script | Description |
-|--------|-------------|
-| `scripts/start.bat` | Start all model servers |
-| `scripts/stop.bat` | Stop all model servers |
-| `scripts/install.bat` | Install Python dependencies |
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
 
 ---
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) file.
+MIT
 
 ---
 
-## 🙏 Acknowledgments
-
-- [vLLM](https://github.com/vllm-project/vllm) — High-throughput LLM serving
-- [FastAPI](https://fastapi.tiangolo.com/) — Modern Python web framework
-- [HuggingFace](https://huggingface.co/) — Model hosting
-
----
-
-<p align="center">
-  Made with ❤️ for the AI community
-</p>
+<p align="center">Made with ❤️ for the AI community</p>
