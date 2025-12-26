@@ -3,135 +3,149 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CUDA 12.x](https://img.shields.io/badge/CUDA-12.x-green.svg)](https://developer.nvidia.com/cuda-toolkit)
-[![vLLM](https://img.shields.io/badge/vLLM-0.6+-orange.svg)](https://github.com/vllm-project/vllm)
 
-A production-ready system for serving multiple LLM models simultaneously across multiple GPUs. Run Qwen, Mistral, Gemma, and more with a unified OpenAI-compatible API.
+A production-ready system for serving multiple LLM models simultaneously across multiple GPUs with a beautiful web interface.
+
+🌐 **Live Demo:** [thisisnimishka.github.io/multi-model-server](https://thisisnimishka.github.io/multi-model-server/)
+
+---
 
 ## ✨ Features
 
-- **Multi-Model Support** - Run multiple models simultaneously on different GPUs
-- **OpenAI-Compatible API** - Drop-in replacement for OpenAI API
-- **Smart Routing** - Automatic routing based on model name or capabilities
-- **Vision Support** - Qwen-VL for image understanding
-- **Health Monitoring** - Built-in health checks and metrics
-- **Easy Configuration** - Simple batch scripts for Windows
-- **Streaming** - Full streaming response support
-- **Load Balancing** - Distribute requests across healthy backends
+- **Multi-Model Support** — Run multiple models simultaneously on different GPUs
+- **OpenAI-Compatible API** — Drop-in replacement for OpenAI API
+- **Vision Support** — Qwen-VL for image understanding
+- **Beautiful Web UI** — Modern glass-morphism chat interface
+- **Easy Model Addition** — Template-based system for adding new models
+- **Health Monitoring** — Built-in health checks per model
 
-## 📋 Table of Contents
+---
 
-- [Architecture](#-architecture)
-- [Hardware Requirements](#-hardware-requirements)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [API Usage](#-api-usage)
-- [Configuration](#-configuration)
-- [Supported Models](#-supported-models)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
-
-## 🏗 Architecture
+## 📁 Project Structure
 
 ```
-                    ┌─────────────────────────────┐
-                    │      API Router (:8000)      │
-                    │   Unified OpenAI-compatible  │
-                    └──────────────┬──────────────┘
-                                   │
-         ┌─────────────┬───────────┼───────────┬─────────────┐
-         ▼             ▼           ▼           ▼             ▼
-   ┌──────────┐  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-   │ Qwen-VL  │  │ Mistral  │ │  Gemma   │ │ Qwen-72B │ │ Flan-T5  │
-   │  :8001   │  │  :8002   │ │  :8003   │ │  :8004   │ │  :8005   │
-   │ GPU 0,1  │  │ GPU 2,3  │ │ GPU 4,5  │ │ GPU 0-7  │ │  GPU 6   │
-   └──────────┘  └──────────┘ └──────────┘ └──────────┘ └──────────┘
+multi-model-server/
+│
+├── frontend/                 # Web UI (GitHub Pages)
+│   ├── index.html            # Live chat interface
+│   ├── chat_loading.html     # Working version
+│   └── chat_server_down.html # Offline page
+│
+├── servers/                  # Model servers
+│   ├── _template.py          # ⭐ Copy this for new models
+│   ├── mistral.py            # Mistral-7B server
+│   ├── qwen.py               # Qwen-VL server
+│   ├── router.py             # API router
+│   └── manager.py            # Server manager
+│
+├── scripts/                  # Startup scripts
+│   ├── start.bat             # Start all servers
+│   ├── stop.bat              # Stop all servers
+│   └── install.bat           # Install dependencies
+│
+├── tests/                    # Test files
+│   └── test_client.py
+│
+├── README.md
+├── requirements.txt
+└── LICENSE
 ```
+
+---
 
 ## 💻 Hardware Requirements
 
-| Component | Minimum | Your Setup |
-|-----------|---------|------------|
-| GPUs | 2x with 10GB+ | 1x RTX 4080 (16GB) + 7x RTX 3080 (10GB) |
-| VRAM Total | 20GB | ~86GB |
-| RAM | 32GB | - |
-| Storage | 100GB SSD | 1TB SSD |
-| CUDA | 12.0+ | 12.8 |
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| GPU | 1x 10GB+ VRAM | Multi-GPU setup |
+| RAM | 16GB | 32GB+ |
+| Storage | 50GB SSD | 500GB+ SSD |
+| CUDA | 12.0+ | 12.4+ |
 
-## 📦 Installation
+### Current Setup (Example)
+- 1x RTX 4080 (16GB) — Qwen-VL
+- 7x RTX 3080 (10GB) — Mistral, Gemma, Llama, etc.
 
-### Option 1: Automated Installation (Windows)
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/multi-model-server.git
-cd multi-model-server
-
-# Run the installation script
-install.bat
-```
-
-### Option 2: Manual Installation
-
-```bash
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Option 3: Using pip (coming soon)
-
-```bash
-pip install multi-model-server
-```
+---
 
 ## 🚀 Quick Start
 
-### 1. Download Models
+### 1. Clone Repository
 
-Download your models using HuggingFace CLI or manually:
+```bash
+git clone https://github.com/ThisIsNimishka/multi-model-server.git
+cd multi-model-server
+```
+
+### 2. Install Dependencies
+
+```bash
+# Windows
+scripts\install.bat
+
+# Manual
+pip install -r requirements.txt
+```
+
+### 3. Download Models
 
 ```bash
 # Using huggingface-cli
 pip install huggingface_hub
-huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct
 huggingface-cli download mistralai/Mistral-7B-Instruct-v0.2
+huggingface-cli download Qwen/Qwen2.5-VL-7B-Instruct
 ```
 
-### 2. Configure Model Paths
+### 4. Configure & Run
 
-Edit `start_servers.bat` or `server_manager.py` with your model paths:
+Edit the CONFIG section in `servers/mistral.py`:
 
-```batch
-set MODELS_BASE=D:\AI_MODELS
-set QWEN_PATH=%MODELS_BASE%\models--Qwen--Qwen2.5-VL-7B-Instruct\snapshots\...
+```python
+MODEL_PATH = "D:/AI_MODELS/models--mistralai--Mistral-7B-Instruct-v0.2/snapshots/..."
+PORT = 8001
+GPU_IDS = "0,1"
 ```
 
-### 3. Start Servers
+Run the server:
 
 ```bash
-# Start default configuration (Qwen + Mistral + Router)
-start_servers.bat
-
-# Or start specific models
-start_servers.bat qwen      # Only Qwen-VL
-start_servers.bat mistral   # Only Mistral
-start_servers.bat all       # All models
+python servers/mistral.py
 ```
 
-### 3. Test
+---
+
+## 🆕 Adding a New Model
+
+### Step 1: Copy Template
 
 ```bash
-# Run automated tests
-python test_client.py test
-
-# Interactive chat
-python test_client.py chat
+copy servers\_template.py servers\llama.py
 ```
+
+### Step 2: Edit CONFIG Section
+
+Open `servers/llama.py` and edit only the top section:
+
+```python
+# === CONFIG ===
+MODEL_NAME = "llama-3-8b"
+MODEL_PATH = "D:/AI_MODELS/models--meta-llama--Llama-3-8B/snapshots/..."
+PORT = 8003
+GPU_IDS = "4,5"
+MAX_MODEL_LEN = 4096
+GPU_MEMORY_UTILIZATION = 0.85
+TENSOR_PARALLEL_SIZE = 2
+```
+
+### Step 3: Run
+
+```bash
+python servers/llama.py
+```
+
+**That's it!** Your new model is now serving on the specified port.
+
+---
 
 ## 📡 API Usage
 
@@ -141,252 +155,140 @@ python test_client.py chat
 import openai
 
 client = openai.OpenAI(
-    base_url="http://localhost:8000/v1",
+    base_url="http://localhost:8001/v1",
     api_key="not-needed"
 )
 
-# Chat completion
 response = client.chat.completions.create(
-    model="mistral",  # or "qwen", "gemma"
+    model="mistral",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 print(response.choices[0].message.content)
 ```
 
-### Direct HTTP Requests
+### cURL
 
 ```bash
-# Chat completion
-curl http://localhost:8000/v1/chat/completions \
+curl http://localhost:8001/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
-
-# Health check
-curl http://localhost:8000/health
-
-# List models
-curl http://localhost:8000/v1/models
 ```
 
-### Vision (Qwen-VL)
+### Health Check
 
-```python
-import base64
-
-# Encode image
-with open("image.jpg", "rb") as f:
-    image_b64 = base64.b64encode(f.read()).decode()
-
-response = client.chat.completions.create(
-    model="qwen",
-    messages=[{
-        "role": "user",
-        "content": [
-            {"type": "text", "text": "What's in this image?"},
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}
-            }
-        ]
-    }]
-)
+```bash
+curl http://localhost:8001/health
 ```
 
-## ⚙️ Configuration
+---
 
-### GPU Allocation
+## 🔌 Available Endpoints
 
-Edit the GPU assignments in `server_manager.py` or `start_servers.bat`:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/chat/completions` | POST | Chat completion |
+| `/v1/models` | GET | List models |
+| `/health` | GET | Health check |
 
-| Model | Default GPUs | VRAM Required |
-|-------|--------------|---------------|
-| Qwen2.5-VL-7B | 0, 1 | ~20GB |
-| Mistral-7B | 2, 3 | ~18GB |
-| Gemma-7B | 4, 5 | ~18GB |
-| Qwen-72B (INT4) | 0-7 | ~80GB |
+---
 
-### Model Paths
+## 🖥️ Model Servers
 
-Update paths in `start_servers.bat`:
+| Model | Port | GPUs | Description |
+|-------|------|------|-------------|
+| Mistral-7B | 8001 | 2,3 | Fast text generation |
+| Qwen-VL | 8002 | 0,1 | Vision + Language |
+| *Add more...* | 800X | X,X | Use `_template.py` |
 
-```batch
-set QWEN_PATH=D:\AI_MODELS\models--Qwen--Qwen2.5-VL-7B-Instruct\snapshots\...
-set MISTRAL_PATH=D:\AI_MODELS\models--mistralai--Mistral-7B-Instruct-v0.2\snapshots\...
-```
+---
 
-### Server Options
+## 🌐 Web Interface
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--tensor-parallel-size` | Number of GPUs per model | 2 |
-| `--max-model-len` | Maximum context length | 4096 |
-| `--gpu-memory-utilization` | GPU memory fraction | 0.85 |
-| `--dtype` | Data type (float16/bfloat16) | auto |
+The frontend is hosted on GitHub Pages:
 
-## 🔌 Endpoints
+**Live:** [thisisnimishka.github.io/multi-model-server](https://thisisnimishka.github.io/multi-model-server/)
 
-| Endpoint | Description |
-|----------|-------------|
-| `POST /v1/chat/completions` | Chat completion (OpenAI compatible) |
-| `GET /v1/models` | List available models |
-| `GET /health` | Health check |
-| `GET /metrics` | Server metrics |
+### Features
+- Modern glass-morphism design
+- Model selection cards
+- Real-time chat with streaming
+- Image upload for vision models
+- Token/speed statistics
+
+### Switching Pages
+
+| File | Purpose |
+|------|---------|
+| `chat_loading.html` | Normal working interface |
+| `chat_server_down.html` | Offline/maintenance page |
+
+To switch: Copy content to `index.html` and push.
+
+---
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### CUDA Out of Memory
 
-**1. CUDA out of memory**
-```bash
-# Reduce GPU memory utilization
---gpu-memory-utilization 0.80
-
-# Reduce context length
---max-model-len 2048
+```python
+# Reduce in CONFIG section:
+GPU_MEMORY_UTILIZATION = 0.80
+MAX_MODEL_LEN = 2048
 ```
 
-**2. Model loading fails**
-```bash
-# Check model path exists
-dir D:\AI_MODELS\models--Qwen--Qwen2.5-VL-7B-Instruct\snapshots\
+### Port Already in Use
 
-# Verify model files
-python -c "from transformers import AutoModel; AutoModel.from_pretrained('path/to/model')"
-```
-
-**3. Port already in use**
 ```bash
-# Find process using port
+# Windows - find process
 netstat -ano | findstr :8001
 
 # Kill process
 taskkill /PID <pid> /F
 ```
 
-**4. vLLM installation issues on Windows**
-```bash
-# Try building from source
-pip install vllm --no-binary vllm
-```
-
-### Logs
+### Model Loading Fails
 
 ```bash
-# View server logs
-type server_manager.log
-
-# Real-time monitoring
-Get-Content server_manager.log -Wait
+# Verify model path exists
+dir D:\AI_MODELS\models--mistralai--Mistral-7B-Instruct-v0.2\snapshots\
 ```
 
-## Advanced Usage
+---
 
-### Running Qwen-72B (Requires All GPUs)
+## 📋 Scripts
 
-```batch
-REM Stop other models first
-REM Start 72B with all GPUs
-set CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python -m vllm.entrypoints.openai.api_server ^
-    --model D:\AI_MODELS\models--Qwen--Qwen2.5-VL-72B-Instruct\snapshots\89c86200743eec961a297729e7990e8f2ddbc4c5 ^
-    --port 8004 ^
-    --tensor-parallel-size 8 ^
-    --max-model-len 2048 ^
-    --gpu-memory-utilization 0.95 ^
-    --trust-remote-code
-```
+| Script | Description |
+|--------|-------------|
+| `scripts/start.bat` | Start all model servers |
+| `scripts/stop.bat` | Stop all model servers |
+| `scripts/install.bat` | Install Python dependencies |
 
-Note: 72B model may require AWQ/GPTQ quantization to fit in 86GB VRAM.
-
-### Docker Deployment
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  qwen:
-    image: vllm/vllm-openai:latest
-    ports:
-      - "8001:8000"
-    volumes:
-      - D:/AI_MODELS:/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0', '1']
-              capabilities: [gpu]
-    command: --model /models/models--Qwen--Qwen2.5-VL-7B-Instruct/snapshots/cc594898137f460bfe9f0759e9844b3ce807cfb5 --tensor-parallel-size 2
-```
-
-## 📁 Project Structure
-
-```
-multi-model-server/
-├── server_manager.py    # Main server manager (Python)
-├── api_router.py        # Unified API router with load balancing
-├── start_servers.bat    # Windows startup script
-├── stop_servers.bat     # Windows stop script
-├── install.bat          # Installation script
-├── test_client.py       # Test client and interactive chat
-├── requirements.txt     # Python dependencies
-├── README.md            # This file
-├── LICENSE              # MIT License
-└── .gitignore           # Git ignore rules
-```
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how you can help:
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Setup
-
-```bash
-# Clone your fork
-git clone https://github.com/YOUR_USERNAME/multi-model-server.git
-cd multi-model-server
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate
-
-# Install dev dependencies
-pip install -r requirements.txt
-pip install pytest black flake8
-
-# Run tests
-python test_client.py test
-```
-
-### Areas for Contribution
-
-- 🐧 Linux/Mac support improvements
-- 🐳 Docker/Kubernetes deployment configs
-- 📊 Prometheus metrics integration
-- 🔐 Authentication/API key support
-- 📚 Documentation improvements
-- 🧪 Test coverage
-
-## 🙏 Acknowledgments
-
-- [vLLM](https://github.com/vllm-project/vllm) - High-throughput LLM serving
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [HuggingFace](https://huggingface.co/) - Model hosting and transformers library
-- Model creators: Qwen, Mistral AI, Google
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file.
+
+---
+
+## 🙏 Acknowledgments
+
+- [vLLM](https://github.com/vllm-project/vllm) — High-throughput LLM serving
+- [FastAPI](https://fastapi.tiangolo.com/) — Modern Python web framework
+- [HuggingFace](https://huggingface.co/) — Model hosting
 
 ---
 
